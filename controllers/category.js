@@ -2,7 +2,6 @@
  * Module dependencies.
  */
 const models = require("../models");
-const Sequelize = require("sequelize");
 
 /**
  * Display a listing of the resource.
@@ -15,24 +14,17 @@ const Sequelize = require("sequelize");
  */
 exports.index = async (req, res, next) => {
   try {
-    await models.quiz
+    await models.category
       .findAll({
         attributes: {
-          exclude: ["categoryId", "createdAt", "updatedAt"],
+          exclude: ["createdAt", "updatedAt"],
         },
-        include: [
-          {
-            model: models.category,
-            as: "category",
-            attributes: ["id", "name"],
-          },
-        ],
       })
-      .then((quizzes) => {
+      .then((categories) => {
         res.status(202).json({
           status: "success",
-          message: "Quizzes fetched successfully",
-          data: quizzes || {},
+          message: "Categories fetched successfully",
+          data: categories || {},
         });
       })
       .catch((error) => {
@@ -61,25 +53,26 @@ exports.index = async (req, res, next) => {
  * @return Array
  */
 exports.store = async (req, res, next) => {
-  const { question, a, b, c, d, answer, image, categoryId } = req.body;
+  const { name } = req.body;
+
+  if (!name) {
+    return res.status(400).json({
+      status: "error",
+      message: "Category name is required",
+      data: {},
+    });
+  }
 
   try {
-    await models.quiz
+    await models.category
       .create({
-        question,
-        a,
-        b,
-        c,
-        d,
-        answer,
-        image,
-        categoryId,
+        name,
       })
-      .then((quiz) => {
+      .then((category) => {
         res.status(201).json({
           status: "success",
-          message: "Quiz created successfully",
-          data: quiz || {},
+          message: "Category created successfully",
+          data: category || {},
         });
       })
       .catch((error) => {
@@ -110,26 +103,27 @@ exports.store = async (req, res, next) => {
 exports.show = async (req, res, next) => {
   const id = req.params.id;
 
+  if (!id) {
+    return res.status(400).json({
+      status: "error",
+      message: "Category id is required",
+      data: {},
+    });
+  }
+
   try {
-    await models.quiz
+    await models.category
       .findByPk(id, {
         rejectOnEmpty: true,
         attributes: {
-          exclude: ["categoryId", "createdAt", "updatedAt"],
+          exclude: ["createdAt", "updatedAt"],
         },
-        include: [
-          {
-            model: models.category,
-            as: "category",
-            attributes: ["id", "name"],
-          },
-        ],
       })
-      .then((quiz) => {
+      .then((category) => {
         res.status(206).json({
           status: "success",
-          message: "Quiz fetched successfully",
-          data: quiz || {},
+          message: "Category fetched successfully",
+          data: category || {},
         });
       })
       .catch((error) => {
@@ -159,39 +153,33 @@ exports.show = async (req, res, next) => {
  */
 exports.update = async (req, res, next) => {
   const id = req.params.id;
-  const { question, a, b, c, d, answer, image, categoryId } = req.body;
+  const { name } = req.body;
+
+  if (!id || !name) {
+    return res.status(400).json({
+      status: "error",
+      message: "Category id and name is required",
+      data: {},
+    });
+  }
 
   try {
-    await models.quiz
+    await models.category
       .findByPk(id, {
         rejectOnEmpty: true,
         attributes: {
-          exclude: ["categoryId", "createdAt", "updatedAt"],
+          exclude: ["createdAt", "updatedAt"],
         },
-        include: [
-          {
-            model: models.category,
-            as: "category",
-            attributes: ["id", "name"],
-          },
-        ],
       })
-      .then((quiz) => {
-        quiz.question = question;
-        quiz.a = a;
-        quiz.b = b;
-        quiz.c = c;
-        quiz.d = d;
-        quiz.answer = answer;
-        quiz.image = image;
-        quiz.categoryId = categoryId;
-        return quiz.save();
+      .then((category) => {
+        category.name = name;
+        return category.save();
       })
-      .then((quiz) => {
+      .then((category) => {
         res.status(202).json({
           status: "success",
-          message: "Quiz updated successfully",
-          data: quiz || {},
+          message: "Category updated successfully",
+          data: category || {},
         });
       })
       .catch((error) => {
@@ -222,69 +210,25 @@ exports.update = async (req, res, next) => {
 exports.destroy = async (req, res, next) => {
   const id = req.params.id;
 
+  if (!id) {
+    return res.status(400).json({
+      status: "error",
+      message: "Category id is required",
+      data: {},
+    });
+  }
+
   try {
-    await models.quiz
+    await models.category
       .findByPk(id, { rejectOnEmpty: true })
-      .then((quiz) => {
-        return quiz.destroy();
+      .then((category) => {
+        return category.destroy();
       })
       .then(() => {
         res.status(202).json({
           status: "success",
-          message: "Quiz deleted successfully",
+          message: "Category deleted successfully",
           data: null,
-        });
-      })
-      .catch((error) => {
-        res.status(500).json({
-          status: "error",
-          message: "Internal server error",
-          data: error.message || {},
-        });
-      });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-      data: error.message || {},
-    });
-  }
-};
-
-/**
- * Display a listing of the resource with specified category.
- *
- * @param  Request  req
- * @param  Response  res
- * @param  Next  next
- *
- * @return Array
- */
-exports.categoryId = async (req, res, next) => {
-  const id = req.params.id;
-
-  try {
-    await models.quiz
-      .findAll({
-        where: { categoryId: id },
-        order: Sequelize.literal("rand()"),
-        limit: 5,
-        attributes: {
-          exclude: ["categoryId", "createdAt", "updatedAt"],
-        },
-        include: [
-          {
-            model: models.category,
-            as: "category",
-            attributes: ["id", "name"],
-          },
-        ],
-      })
-      .then((quizzes) => {
-        res.status(202).json({
-          status: "success",
-          message: "Quizzes fetched successfully",
-          data: quizzes || {},
         });
       })
       .catch((error) => {

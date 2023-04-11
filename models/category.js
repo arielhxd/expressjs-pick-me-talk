@@ -22,6 +22,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         validate: { notEmpty: { msg: "Category must not be empty" } },
       },
+      image: {
+        type: DataTypes.STRING,
+        validate: { notEmpty: { msg: "Image must not be empty" } },
+      },
+      style: {
+        type: DataTypes.STRING,
+        validate: { notEmpty: { msg: "Style must not be empty" } },
+      },
     },
     {
       sequelize,
